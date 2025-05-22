@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>礼物兑换平台</title>
+  <style>
+    body {
+      font-family: "KaiTi", "楷体", serif;
+      padding: 1em;
+      background-color: #f8f8f8;
+      color: #333;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .hidden {
+      display: none;
+    }
+    .section {
+      margin-bottom: 2em;
+      background: white;
+      padding: 1em;
+      border-radius: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    input, button, select {
+      font-family: "KaiTi", "楷体", serif;
+      padding: 0.4em;
+      margin: 0.2em;
+      font-size: 1em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1em;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.5em;
+      text-align: center;
+    }
+    .gift-img {
+      max-width: 60px;
+    }
+    .flex {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1em;
+    }
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      th, td {
+        text-align: left;
+      }
+    }
+    .pagination {
+      text-align: center;
+      margin-top: 1em;
+    }
+    .pagination button {
+      margin: 0 0.3em;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🎁 礼物兑换平台</h1>
+
+<div class="section" id="loginSection">
+  <h2>登录</h2>
+  <input type="text" id="nickname" placeholder="请输入昵称" />
+  <input type="password" id="adminPwd" placeholder="管理员密码（如有）" />
+  <button onclick="login()">登录</button>
+</div>
+
+<div class="section hidden" id="userSection">
+  <h2>欢迎，<span id="currentUser"></span>！当前积分：<span id="userPointsDisplay"></span></h2>
+  <div id="giftList"></div>
+</div>
+
+<div class="section hidden" id="adminSection">
+  <h2>管理员面板</h2>
+
+  <div>
+    <h3>📦 添加/修改礼物</h3>
+    <input type="text" id="giftName" placeholder="礼物名" />
+    <input type="text" id="giftImg" placeholder="图片链接" />
+    <input type="number" id="giftCost" placeholder="所需积分" />
+    <input type="number" id="giftStock" placeholder="库存" />
+    <input type="text" id="giftOptions" placeholder="选项（可选，用逗号分隔）" />
+    <button onclick="addOrUpdateGift()">添加/更新礼物</button>
+  </div>
+
+  <div id="adminGiftList"></div>
+
+  <hr />
+
+  <h3>👥 用户积分管理</h3>
+  <div>
+    <input type="text" id="logDescription" placeholder="事项说明" />
+    <input type="number" id="logScore" placeholder="得分" />
+    <button onclick="applyToSelected()">应用至勾选用户</button>
+  </div>
+
+  <div>
+    <label for="monthSelect">查看月份：</label>
+    <select id="monthSelect" onchange="renderUserTable()"></select>
+  </div>
+
+  <div id="userTableContainer"></div>
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+// JavaScript 核心逻辑将在第二部分加入
+</script>
+
+</body>
+</html>
