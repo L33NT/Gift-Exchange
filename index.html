@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>礼物兑换平台</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 900px;
+      margin: 10px auto;
+      padding: 0 10px;
+    }
+    h1,h2,h3 {
+      text-align: center;
+    }
+    .hidden { display: none; }
+    #login-section, #main-section {
+      border: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      background: #f9f9f9;
+    }
+    input, button, select {
+      padding: 5px 8px;
+      font-size: 1rem;
+    }
+    button {
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #gift-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    .gift-card {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      width: 220px;
+      padding: 10px;
+      background: white;
+      box-shadow: 1px 1px 5px #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .gift-card img {
+      max-width: 180px;
+      height: 120px;
+      object-fit: contain;
+      margin-bottom: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .gift-info {
+      flex: 1;
+      width: 100%;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .gift-buttons button {
+      margin: 3px 6px;
+      padding: 6px 10px;
+      font-size: 0.9rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    table, th, td {
+      border: 1px solid #aaa;
+    }
+    th, td {
+      padding: 6px 8px;
+      text-align: center;
+    }
+    #user-info {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    #logout-btn {
+      margin-left: 15px;
+    }
+    /* 响应式手机适配 */
+    @media (max-width: 600px) {
+      #gift-list {
+        flex-direction: column;
+        align-items: center;
+      }
+      .gift-card {
+        width: 90%;
+      }
+      table, th, td {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h1>礼物兑换平台</h1>
+
+<!-- 登录区 -->
+<section id="login-section">
+  <h2>登录</h2>
+  <input id="username-input" placeholder="请输入昵称" />
+  <button id="login-btn">登录</button>
+  <p>管理员用户名: <b>admin</b></p>
+</section>
+
+<!-- 主内容区 -->
+<section id="main-section" class="hidden">
+  <div id="user-info">
+    当前用户：<span id="current-user"></span> | 积分：<span id="user-points"></span> | 角色：<span id="user-role"></span>
+    <button id="logout-btn">登出</button>
+  </div>
+
+  <!-- 管理员添加礼物 -->
+  <section id="add-gift-form" class="hidden" style="border:1px solid #ddd; padding:10px; margin-bottom: 20px;">
+    <h3>添加新礼物</h3>
+    <input id="gift-name" placeholder="礼物名称" style="width: 130px;" />
+    <input id="gift-points" type="number" placeholder="兑换积分" style="width: 100px;" />
+    <input id="gift-stock" type="number" placeholder="库存数量" style="width: 100px;" />
+    <input id="gift-image" placeholder="图片链接" style="width: 220px;" />
+    <input id="gift-options" placeholder="选项（逗号分隔，可空）" style="width: 220px;" />
+    <button id="add-gift-btn">添加</button>
+  </section>
+
+  <!-- 礼物列表 -->
+  <section>
+    <h2>礼物列表</h2>
+    <div id="gift-list"></div>
+  </section>
+
+  <!-- 兑换记录 -->
+  <section style="margin-top: 30px;">
+    <h2>兑换记录</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>用户名</th><th>礼物名称</th><th>选项</th><th>兑换时间</th>
+        </tr>
+      </thead>
+      <tbody id="record-tbody"></tbody>
+    </table>
+  </section>
+
+  <!-- 用户积分管理（管理员专用） -->
+  <section id="user-points-management" class="hidden" style="margin-top:20px; border:1px solid #ccc; padding:10px;">
+    <h3>用户积分管理（管理员专用）</h3>
+    <table>
+      <thead>
+        <tr><th>用户名</th><th>积分</th><th>操作</th></tr>
+      </thead>
+      <tbody id="user-points-tbody"></tbody>
+    </table>
+  </section>
+</section>
+
+<script>
+  // 数据变量
+  let currentUser = null;
+  let isAdmin = false;
+  let gifts = JSON.parse(localStorage.getItem('gifts')) || [];
+  let exchangeRecords = JSON.parse(localStorage.getItem('exchangeRecords')) || [];
+  let userPoints = {};  // 将从配置文件加载或 localStorage 合并
+
+  // 保存所有数据到 localStorage
+  function saveData() {
+    localStorage.setItem('gifts', JSON.stringify(gifts));
+    localStorage.setItem('exchangeRecords', JSON.stringify(exchangeRecords));
+    localStorage.setItem('userPoints', JSON.stringify(userPoints));
+  }
+
+  // 渲染界面
+  function renderUI() {
+    if (!currentUser) return;
+
+    // 显示用户信息
+    document.getElementById('current-user').textContent = currentUser;
+    document.getElementById('user-points').textContent = userPoints[currentUser] || 0;
+    document.getElementById('user-role').textContent = isAdmin ? "管理员" : "普通用户";
+
+    // 管理员可见区域
+    document.getElementById('add-gift-form').classList.toggle('hidden', !isAdmin);
+
+    // 礼物列表
+    const giftList = document.getElementById('gift-list');
+    giftList.innerHTML = "";
+    gifts.forEach((gift, i) => {
+      const card = document.createElement('div');
+      card.className = 'gift-card';
+
+      card.innerHTML = `
+        <img src="${gift.image}" alt="${gift.name}" onerror="this.src='https://via.placeholder.com/100?text=无图'" />
+        <div class="gift-info">
+          <h3>${gift.name}</h3>
+          <p>积分：${gift.points}</p>
+          <p>库存：${gift.stock}</p>
+          ${gift.options && gift.options.length > 0 ? `<p>选项：${gift.options.join(", ")}</p>` : ''}
+        </div>
+        <div class="gift-buttons"></div>
+      `;
+
+      const btns = card.querySelector('.gift-buttons');
+
+      // 兑换按钮
+      const canRedeem = (userPoints[currentUser] || 0) >= gift.points && gift.stock > 0;
+      const redeemBtn = document.createElement('button');
+      redeemBtn.textContent = '兑换';
+      redeemBtn.disabled = !canRedeem;
+      redeemBtn.onclick = () => redeemGift(i);
+      btns.appendChild(redeemBtn);
+
+      if (isAdmin) {
+        // 编辑
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '编辑';
+        editBtn.onclick = () => editGift(i);
+        btns.appendChild(editBtn);
+
+        // 删除
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '删除';
+        delBtn.onclick = () => {
+          if (confirm(`确定删除礼物 "${gift.name}" 吗？`)) {
+            gifts.splice(i, 1);
+            saveData();
+            renderUI();
+          }
+        };
+        btns.appendChild(delBtn);
+      }
+
+      giftList.appendChild(card);
+    });
+
+    // 兑换记录
+    const recordTbody = document.getElementById('record-tbody');
+    recordTbody.innerHTML = '';
+    exchangeRecords.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.user}</td>
+        <td>${r.giftName}</td>
+        <td>${r.option || '-'}</td>
+        <td>${r.time}</td>
+      `;
+      recordTbody.appendChild(tr);
+    });
+
+    // 用户积分管理（管理员专用）
+    const userPointsManagement = document.getElementById('user-points-management');
+    if (isAdmin) {
+      userPointsManagement.classList.remove('hidden');
+
+      const tbody = document.getElementById('user-points-tbody');
+      tbody.innerHTML = '';
+
+      Object.keys(userPoints).sort().forEach(username => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${username}</td>
+          <td><input type="number" min="0" value="${userPoints[username]}" style="width:60px;" data-username="${username}"></td>
+          <td><button class="save-point-btn" data-username="${username}">保存</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // 绑定保存积分按钮事件
+      tbody.querySelectorAll('.save-point-btn').forEach(btn => {
+        btn.onclick = () => {
+          const uname = btn.getAttribute('data-username');
+          const input = tbody.querySelector(`input[data-username="${uname}"]`);
+          let val = parseInt(input.value);
+          if (isNaN(val) || val < 0) {
+            alert('积分必须是非负整数');
+            return;
+          }
+          userPoints[uname] = val;
+          saveData();
+          renderUI();
+          alert(`用户 "${uname}" 的积分已更新为 ${val}`);
+        };
+      });
+
+    } else {
+      userPointsManagement.classList.add('hidden');
+    }
+  }
+
+  // 登录
+  document.getElementById('login-btn').onclick = () => {
+    const username = document.getElementById('username-input').value.trim();
+    if (!username) {
+      alert('请输入昵称');
+      return;
+    }
+    currentUser = username;
+    isAdmin = (username.toLowerCase() === 'admin');
+
+    // 新用户默认积分0
+    if (userPoints[currentUser] === undefined) {
+      userPoints[currentUser] = 0;
+    }
+
+    document.getElementById('login-section').classList.add('hidden');
+    document.getElementById('main-section').classList.remove('hidden');
+    saveData();
+    renderUI();
+  };
+
+  // 登出
+if (!name || isNaN(points) || isNaN(stock) || !image) {
+  alert("请填写完整礼物信息");
+  return;
+}
+
+gifts.push({
+  name, points, stock, image,
+  options: options ? options.split(',').map(o => o.trim()) : []
+});
+saveData();
+renderUI();
+
+// 清空表单
+['gift-name','gift-points','gift-stock','gift-image','gift-options'].forEach(id => {
+  document.getElementById(id).value = '';
+});
+if (gift.options && gift.options.length > 0) {
+  chosenOption = prompt(`请选择一个选项：${gift.options.join(", ")}`);
+  if (!gift.options.includes(chosenOption)) {
+    alert("无效选项，兑换取消");
+    return;
+  }
+}
+
+userPoints[currentUser] -= gift.points;
+gifts[i].stock -= 1;
+exchangeRecords.unshift({
+  user: currentUser,
+  giftName: gift.name,
+  option: chosenOption || '-',
+  time: new Date().toLocaleString()
+});
+
+saveData();
+renderUI();
+if (name && !isNaN(points) && !isNaN(stock)) {
+  gifts[i] = {
+    name, points: parseInt(points), stock: parseInt(stock),
+    image, options: options ? options.split(',').map(o => o.trim()) : []
+  };
+  saveData();
+  renderUI();
+}
