@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>礼物兑换中心</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-6">🎁 礼物兑换中心</h1>
+
+    <!-- 用户积分 -->
+    <div class="bg-white shadow p-4 rounded-xl mb-6 flex items-center justify-between">
+      <div class="text-xl">当前积分：<span id="userPoints" class="font-bold text-green-600">100</span></div>
+      <button onclick="resetPoints()" class="text-sm bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">重置积分</button>
+    </div>
+
+    <!-- 礼物容器 -->
+    <div id="giftContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"></div>
+
+    <!-- 添加礼物按钮 -->
+    <div class="text-center">
+      <button onclick="addGiftCard()" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">➕ 新增礼物</button>
+    </div>
+  </div>
+
+  <script>
+    let userPoints = parseInt(localStorage.getItem("userPoints")) || 100;
+    document.getElementById("userPoints").innerText = userPoints;
+
+    function resetPoints() {
+      userPoints = 100;
+      localStorage.setItem("userPoints", userPoints);
+      document.getElementById("userPoints").innerText = userPoints;
+    }
+
+    function addGiftCard() {
+      const container = document.getElementById("giftContainer");
+      const card = document.createElement("div");
+      card.className = "bg-white rounded-2xl shadow p-4";
+
+      card.innerHTML = `
+        <img src="https://via.placeholder.com/300x200" class="rounded-xl w-full h-48 object-cover mb-4 preview" />
+        <input type="file" accept="image/*" class="mb-3 w-full text-sm" onchange="previewImage(event, this)">
+        <input type="text" placeholder="礼物名称" class="border p-2 w-full rounded mb-2 gift-name">
+        <textarea placeholder="礼物描述" class="border p-2 w-full rounded mb-2 gift-desc"></textarea>
+        <label class="block mb-1 font-medium">库存数量：</label>
+        <input type="number" value="10" min="0" class="border p-2 w-full rounded mb-3 stock">
+        <label class="block mb-1 font-medium">所需积分：</label>
+        <input type="number" value="10" min="1" class="border p-2 w-full rounded mb-4 points">
+        <button onclick="redeemGift(this)" class="bg-green-500 text-white px-4 py-2 rounded w-full hover:bg-green-600">立即兑换</button>
+      `;
+
+      container.appendChild(card);
+    }
+
+    function previewImage(event, input) {
+      const img = input.previousElementSibling;
+      img.src = URL.createObjectURL(event.target.files[0]);
+    }
+
+    function redeemGift(button) {
+      const card = button.parentElement;
+      const stockInput = card.querySelector('.stock');
+      const pointsInput = card.querySelector('.points');
+      const giftName = card.querySelector('.gift-name').value || "礼物";
+
+      let stock = parseInt(stockInput.value);
+      const cost = parseInt(pointsInput.value);
+
+      if (stock <= 0) {
+        alert("库存不足！");
+        return;
+      }
+
+      if (userPoints < cost) {
+        alert("积分不足，无法兑换！");
+        return;
